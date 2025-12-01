@@ -1,5 +1,4 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use num::Integer;
 
 #[aoc_generator(day01)]
 pub fn generate(s: &str) -> Vec<isize> {
@@ -28,15 +27,28 @@ pub fn part1(inp: &[isize]) -> isize {
 
 #[aoc(day01, part2)]
 pub fn part2(inp: &[isize]) -> isize {
-    let (_, num_zero) = inp.iter().fold((50, 0), |(cur, num_zero), elem| {
-        let (full_rotations, remainder) = elem.div_rem(&NUM_DIALS);
+    let mut current = 50;
+    let mut num_zero = 0;
 
-        let next_pos = cur + remainder;
-        let next_mod = next_pos.rem_euclid(NUM_DIALS);
+    for &rot in inp {
+        let mut x = rot.abs();
+        while x >= NUM_DIALS {
+            num_zero += 1;
+            x -= NUM_DIALS;
+        }
 
-        let flipped_sign = isize::from(cur != 0 && (next_mod == 0 || next_pos != next_mod));
-        (next_mod, num_zero + full_rotations.abs() + flipped_sign)
-    });
+        let was_zero = current == 0;
+
+        current += x * rot.signum();
+
+        num_zero += isize::from(!was_zero && (current <= 0 || current >= NUM_DIALS));
+
+        if current < 0 {
+            current += NUM_DIALS;
+        } else if current >= NUM_DIALS {
+            current -= NUM_DIALS;
+        }
+    }
 
     num_zero
 }
