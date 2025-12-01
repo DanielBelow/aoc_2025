@@ -30,16 +30,20 @@ pub fn part2(inp: &[isize]) -> isize {
     let mut current = 50;
     let mut num_zero = 0;
 
-    for &rot in inp {
-        let mut x = rot.abs();
-        while x >= NUM_DIALS {
+    for rot in inp {
+        let mut rot = *rot;
+        while rot >= NUM_DIALS {
             num_zero += 1;
-            x -= NUM_DIALS;
+            rot -= NUM_DIALS;
+        }
+
+        while rot <= -NUM_DIALS {
+            num_zero += 1;
+            rot += NUM_DIALS;
         }
 
         let was_zero = current == 0;
-
-        current += x * rot.signum();
+        current += rot;
 
         num_zero += isize::from(!was_zero && (current <= 0 || current >= NUM_DIALS));
 
