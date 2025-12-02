@@ -17,12 +17,15 @@ const NUM_DIALS: isize = 100;
 
 #[aoc(day01, part1)]
 pub fn part1(inp: &[isize]) -> isize {
-    let (_, num_zero) = inp.iter().fold((50, 0), |(cur, num_zero), elem| {
-        let cur = (cur + elem).rem_euclid(NUM_DIALS);
-        (cur, num_zero + isize::from(cur == 0))
-    });
+    let mut current = 50;
+    let mut hit_zero = 0;
 
-    num_zero
+    for &rot in inp {
+        current += rot;
+        hit_zero += isize::from((current % NUM_DIALS) == 0);
+    }
+
+    hit_zero
 }
 
 #[aoc(day01, part2)]
