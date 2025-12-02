@@ -25,13 +25,13 @@ pub fn generate(s: &str) -> Vec<(usize, usize)> {
         .collect()
 }
 
-fn is_invalid_id(num: &str, take: usize) -> bool {
+fn is_invalid_id(num: &[u8], take: usize) -> bool {
     if !num.len().is_multiple_of(take) {
         return false;
     }
 
     for i in 0..take {
-        if !num.chars().skip(i).step_by(take).all_equal() {
+        if !num.iter().skip(i).step_by(take).all_equal() {
             return false;
         }
     }
@@ -47,7 +47,7 @@ pub fn part1(inp: &[(usize, usize)]) -> usize {
             let id_str = id.to_string();
             let len = id_str.len();
 
-            len.is_even() && is_invalid_id(&id_str, len / 2)
+            len.is_even() && is_invalid_id(id_str.as_bytes(), len / 2)
         })
         .sum()
 }
@@ -61,7 +61,7 @@ pub fn part2(inp: &[(usize, usize)]) -> usize {
             let len = id_str.len();
 
             for l in 1..=(len / 2) {
-                if is_invalid_id(&id_str, l) {
+                if is_invalid_id(id_str.as_bytes(), l) {
                     return true;
                 }
             }
