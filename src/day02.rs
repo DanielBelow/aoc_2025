@@ -5,24 +5,20 @@ use rayon::prelude::*;
 
 #[aoc_generator(day02)]
 pub fn generate(s: &str) -> Vec<(usize, usize)> {
-    s.lines()
-        .flat_map(|it| {
-            let spl = it.split(',');
+    let spl = s.split(',');
 
-            let mut v = vec![];
+    let mut data = vec![];
 
-            for sp in spl.filter(|s| !s.is_empty()) {
-                let x = sp.split_once('-');
-                let (lhs, rhs) = x.expect("'-' separated start and end ID");
-                let lhs = lhs.parse::<usize>().expect("valid number");
-                let rhs = rhs.parse::<usize>().expect("valid number");
+    for sp in spl.map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        let x = sp.split_once('-');
+        let (lhs, rhs) = x.expect("'-' separated start and end ID");
+        let lhs = lhs.parse::<usize>().expect("valid number");
+        let rhs = rhs.parse::<usize>().expect("valid number");
 
-                v.push((lhs, rhs));
-            }
+        data.push((lhs, rhs));
+    }
 
-            v
-        })
-        .collect()
+    data
 }
 
 fn is_invalid_id(num: &[u8], take: usize) -> bool {
