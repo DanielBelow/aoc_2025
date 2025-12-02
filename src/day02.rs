@@ -9,7 +9,7 @@ pub fn generate(s: &str) -> Vec<(usize, usize)> {
 
     let mut data = vec![];
 
-    for sp in spl.map(|s| s.trim()).filter(|s| !s.is_empty()) {
+    for sp in spl.map(str::trim).filter(|s| !s.is_empty()) {
         let x = sp.split_once('-');
         let (lhs, rhs) = x.expect("'-' separated start and end ID");
         let lhs = lhs.parse::<usize>().expect("valid number");
