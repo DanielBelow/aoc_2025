@@ -1,23 +1,23 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 use num::Integer;
+use rayon::prelude::*;
 
 #[aoc_generator(day02)]
-pub fn generate(s: &str) -> Vec<(isize, isize)> {
+pub fn generate(s: &str) -> Vec<(usize, usize)> {
     s.lines()
         .flat_map(|it| {
             let spl = it.split(',');
 
             let mut v = vec![];
 
-            for sp in spl {
-                if sp.is_empty() {
-                    continue;
-                }
-
+            for sp in spl.filter(|s| !s.is_empty()) {
                 let x = sp.split_once('-');
-                let (lhs, rhs) = x.unwrap();
-                v.push((lhs.parse::<isize>().unwrap(), rhs.parse::<isize>().unwrap()));
+                let (lhs, rhs) = x.expect("'-' separated start and end ID");
+                let lhs = lhs.parse::<usize>().expect("valid number");
+                let rhs = rhs.parse::<usize>().expect("valid number");
+
+                v.push((lhs, rhs));
             }
 
             v
@@ -40,45 +40,35 @@ fn is_invalid_id(num: &str, take: usize) -> bool {
 }
 
 #[aoc(day02, part1)]
-pub fn part1(inp: &[(isize, isize)]) -> isize {
-    let mut invalid = 0;
-
-    for (l, r) in inp {
-        for id in *l..=*r {
+pub fn part1(inp: &[(usize, usize)]) -> usize {
+    inp.par_iter()
+        .flat_map(|(l, r)| *l..=*r)
+        .filter(|id| {
             let id_str = id.to_string();
             let len = id_str.len();
-            if len.is_odd() {
-                continue;
-            }
 
-            if is_invalid_id(&id_str, len / 2) {
-                invalid += id;
-            }
-        }
-    }
-
-    invalid
+            len.is_even() && is_invalid_id(&id_str, len / 2)
+        })
+        .sum()
 }
 
 #[aoc(day02, part2)]
-pub fn part2(inp: &[(isize, isize)]) -> isize {
-    let mut invalid = 0;
-
-    for (l, r) in inp {
-        for id in *l..=*r {
+pub fn part2(inp: &[(usize, usize)]) -> usize {
+    inp.par_iter()
+        .flat_map(|(l, r)| *l..=*r)
+        .filter(|id| {
             let id_str = id.to_string();
             let len = id_str.len();
 
             for l in 1..=(len / 2) {
                 if is_invalid_id(&id_str, l) {
-                    invalid += id;
-                    break;
+                    return true;
                 }
             }
-        }
-    }
 
-    invalid
+            false
+        })
+        .sum()
 }
 
 #[cfg(test)]
