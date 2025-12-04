@@ -4,19 +4,46 @@ use pathfinding::matrix::Matrix;
 
 const ROLL_OF_PAPER: char = '@';
 
+#[derive(Copy, Clone, Debug)]
+pub struct Cell {
+    kind: char,
+    num_neighbours: usize,
+}
+
 #[aoc_generator(day04)]
-pub fn generate(s: &str) -> Option<Matrix<char>> {
-    Matrix::from_rows(s.lines().map(|l| l.chars().collect_vec()).collect_vec()).ok()
+pub fn generate(s: &str) -> Option<Matrix<Cell>> {
+    let matrix =
+        Matrix::from_rows(s.lines().map(|l| l.chars().collect_vec()).collect_vec()).ok()?;
+
+    let mut cells = Matrix::new(
+        matrix.rows,
+        matrix.columns,
+        Cell {
+            kind: '.',
+            num_neighbours: 0,
+        },
+    );
+
+    for (pos, c) in matrix.items() {
+        let num_neighbours = matrix
+            .neighbours(pos, true)
+            .filter(|p| matrix[p] == ROLL_OF_PAPER)
+            .count();
+        let cell_to_update = &mut cells[pos];
+        cell_to_update.kind = *c;
+        cell_to_update.num_neighbours = num_neighbours;
+    }
+
+    Some(cells)
 }
 
 #[aoc(day04, part1)]
-pub fn part1(inp: &Matrix<char>) -> usize {
-    inp.keys()
-        .fold(0, |acc, pos| acc + usize::from(is_accessible(pos, inp)))
+pub fn part1(inp: &Matrix<Cell>) -> usize {
+    inp.items().filter(|&(_, c)| is_accessible(c)).count()
 }
 
 #[aoc(day04, part2)]
-pub fn part2(inp: &Matrix<char>) -> usize {
+pub fn part2(inp: &Matrix<Cell>) -> usize {
     let mut removed = 0;
 
     let mut inp = inp.clone();
@@ -25,11 +52,19 @@ pub fn part2(inp: &Matrix<char>) -> usize {
         let mut had_changes = false;
 
         for pos in inp.keys() {
-            if is_accessible(pos, &inp) {
-                removed += 1;
-                had_changes = true;
-                inp[pos] = '.';
+            let c = &mut inp[pos];
+            if !is_accessible(c) {
+                continue;
             }
+
+            removed += 1;
+            c.kind = '.';
+
+            for n in inp.neighbours(pos, true) {
+                inp[n].num_neighbours -= 1;
+            }
+
+            had_changes = true;
         }
 
         if !had_changes {
@@ -40,17 +75,8 @@ pub fn part2(inp: &Matrix<char>) -> usize {
     removed
 }
 
-fn is_accessible(center_pos: (usize, usize), grid: &Matrix<char>) -> bool {
-    if grid[center_pos] != ROLL_OF_PAPER {
-        return false;
-    }
-
-    let num_neighbours = grid
-        .neighbours(center_pos, true)
-        .filter(|&neighbour_pos| grid[neighbour_pos] == ROLL_OF_PAPER)
-        .count();
-
-    num_neighbours < 4
+const fn is_accessible(cell: &Cell) -> bool {
+    cell.kind == ROLL_OF_PAPER && cell.num_neighbours < 4
 }
 
 #[cfg(test)]
