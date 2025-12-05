@@ -1,4 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use rayon::prelude::*;
 
 pub struct Input {
     ranges: Vec<(usize, usize)>,
@@ -7,55 +8,53 @@ pub struct Input {
 
 #[aoc_generator(day05)]
 pub fn generate(s: &str) -> Option<Input> {
-    let (ranges, ids) = s.split_once("\n\n")?;
+    let (range_lines, id_lines) = s.split_once("\n\n")?;
 
-    let ranges = ranges.lines().fold(vec![], |mut acc, line| {
-        let (from, to) = line.split_once("-").unwrap();
-        acc.push((from.parse::<usize>().unwrap(), to.parse::<usize>().unwrap()));
-        acc
-    });
+    let mut ranges = vec![];
+    for line in range_lines.lines() {
+        let (from, to) = line.split_once('-')?;
+        ranges.push((from.parse::<usize>().ok()?, to.parse::<usize>().ok()?));
+    }
 
-    let ids = ids.lines().fold(vec![], |mut acc, line| {
-        acc.push(line.parse::<usize>().unwrap());
-        acc
-    });
+    let mut ids = vec![];
+    for line in id_lines.lines() {
+        ids.push(line.parse::<usize>().ok()?);
+    }
 
     Some(Input { ranges, ids })
 }
 
 #[aoc(day05, part1)]
 pub fn part1(inp: &Input) -> usize {
-    let ranges = merge_overlapping(&mut inp.ranges.clone());
-
-    inp.ids.iter().fold(0, |acc, &id| {
-        let is_fresh = ranges.iter().any(|r| id >= r[0] && id <= r[1]);
-        acc + usize::from(is_fresh)
-    })
+    inp.ids
+        .par_iter()
+        .map(|&id| {
+            let is_fresh = inp.ranges.iter().any(|&(from, to)| id >= from && id <= to);
+            usize::from(is_fresh)
+        })
+        .sum()
 }
 
 #[aoc(day05, part2)]
 pub fn part2(inp: &Input) -> usize {
-    let ranges = merge_overlapping(&mut inp.ranges.clone());
-    ranges.iter().map(|r| r[1] - r[0] + 1).sum()
-}
+    let mut ranges = inp.ranges.clone();
+    ranges.sort_by_key(|(from, _)| *from);
 
-fn merge_overlapping(ranges: &mut [(usize, usize)]) -> Vec<Vec<usize>> {
-    ranges.sort_by(|(lhs, _), (rhs, _)| lhs.cmp(rhs));
+    let mut count = 0;
+    let mut largest_fresh = 0;
 
-    let mut result = vec![];
-    result.push(vec![ranges[0].0, ranges[0].1]);
-
-    for cur in ranges.iter().skip(1) {
-        let j = result.len() - 1;
-
-        if (result[j][0]..=result[j][1]).contains(&cur.0) {
-            result[j][1] = cur.1.max(result[j][1]);
+    for (from, to) in ranges {
+        let diff = if from > largest_fresh {
+            Some(to - from + 1)
         } else {
-            result.push(vec![cur.0, cur.1]);
-        }
+            to.checked_sub(largest_fresh)
+        };
+
+        count += diff.unwrap_or_default();
+        largest_fresh = diff.map_or(largest_fresh, |_| to);
     }
 
-    result
+    count
 }
 
 #[cfg(test)]
@@ -76,14 +75,14 @@ mod tests {
 
     #[test]
     fn test_p1() {
-        let data = generate(TEST_INPUT).unwrap();
+        let data = generate(TEST_INPUT).expect("valid test input");
         let res = part1(&data);
         assert_eq!(res, 3);
     }
 
     #[test]
     fn test_p2() {
-        let data = generate(TEST_INPUT).unwrap();
+        let data = generate(TEST_INPUT).expect("valid test input");
         let res = part2(&data);
         assert_eq!(res, 14);
     }
