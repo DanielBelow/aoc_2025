@@ -29,19 +29,19 @@ pub fn part2(inp: &Matrix<char>) -> usize {
 
 fn cephalopod_math<F>(inp: &Matrix<char>, num_ops: usize, collect_operands: F) -> usize
 where
-    F: Fn(&[&char], &mut [String], usize, &mut char),
+    F: Fn(&[&char], &mut [String], usize, &mut Option<char>),
 {
     let mut res = 0;
     let mut operands = vec![String::new(); num_ops];
-    let mut operation = ' ';
+    let mut operation = None;
 
     for (col_idx, col) in inp.column_iter().enumerate() {
         collect_operands(&col, &mut operands, col_idx, &mut operation);
 
-        if col.iter().all(|it| **it == ' ') || col_idx == inp.columns - 1 {
+        if col.iter().all(|it| it.is_ascii_whitespace()) || col_idx == inp.columns - 1 {
             res += finish_operands(operation, &operands);
 
-            operation = ' ';
+            operation = None;
             operands = vec![String::new(); num_ops];
         }
     }
@@ -49,24 +49,24 @@ where
     res
 }
 
-fn collect_operands<F>(column: &[&char], operation: &mut char, mut append_to_operator: F)
+fn collect_operands<F>(column: &[&char], operation: &mut Option<char>, mut append_to_operator: F)
 where
     F: FnMut(usize, char),
 {
     for (i, &&c) in column.iter().enumerate() {
         match c {
-            '*' | '+' => *operation = c,
+            '*' | '+' => *operation = Some(c),
             c if c.is_ascii_digit() => append_to_operator(i, c),
             _ => {}
         }
     }
 }
 
-fn finish_operands(operation: char, operands: &[String]) -> usize {
+fn finish_operands(operation: Option<char>, operands: &[String]) -> usize {
     let nums = operands.iter().filter_map(|it| it.parse::<usize>().ok());
     match operation {
-        '*' => nums.product::<usize>(),
-        '+' => nums.sum::<usize>(),
+        Some('*') => nums.product(),
+        Some('+') => nums.sum(),
         _ => panic!("unknown operation"),
     }
 }
