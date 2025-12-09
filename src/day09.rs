@@ -2,6 +2,7 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use geo::Contains;
 use geo_types::{Coord, LineString, Polygon, Rect};
 use itertools::Itertools;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 #[aoc_generator(day09)]
 pub fn generate(s: &str) -> Option<Vec<(isize, isize)>> {
@@ -31,39 +32,32 @@ pub fn part1(inp: &[(isize, isize)]) -> Option<usize> {
 }
 
 #[aoc(day09, part2)]
-pub fn part2(inp: &[(isize, isize)]) -> Option<usize> {
-    let coords = inp.iter().map(|(l, r)| to_coord(*l, *r)).collect_vec();
-
-    let poly = Polygon::new(LineString(coords), vec![]);
-
-    let max = inp
-        .iter()
-        .map(|(l, r)| to_coord(*l, *r))
-        .combinations(2)
-        .sorted_by_key(|it| get_area(it))
-        .rev()
-        .find(|it| {
-            let rect = Rect::new(it[0], it[1]);
-            poly.contains(&rect)
-        })?;
-
-    Some(get_area(&max))
-}
-
-fn get_area(coords: &[Coord]) -> usize {
-    assert_eq!(coords.len(), 2);
-
-    let (lx, ly) = coords[0].x_y();
-    let (rx, ry) = coords[1].x_y();
-    area((lx as isize, ly as isize), (rx as isize, ry as isize))
-}
-
 #[allow(clippy::cast_precision_loss)]
-const fn to_coord(x: isize, y: isize) -> Coord<f64> {
-    Coord {
-        x: x as f64,
-        y: y as f64,
-    }
+pub fn part2(inp: &[(isize, isize)]) -> Option<usize> {
+    let coords = inp
+        .iter()
+        .map(|&(l, r)| Coord {
+            x: l as f64,
+            y: r as f64,
+        })
+        .collect_vec();
+
+    let poly = Polygon::new(LineString(coords.clone()), vec![]);
+
+    coords
+        .iter()
+        .combinations(2)
+        .par_bridge()
+        .filter(|it| {
+            let rect = Rect::new(*it[0], *it[1]);
+            poly.contains(&rect)
+        })
+        .map(|it| {
+            let Coord { x: x1, y: y1 } = it[0];
+            let Coord { x: x2, y: y2 } = it[1];
+            area((*x1 as isize, *y1 as isize), (*x2 as isize, *y2 as isize))
+        })
+        .max()
 }
 
 #[cfg(test)]
