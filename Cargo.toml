@@ -20,3 +20,4 @@ memoize = "0.5.1"
 rayon = "1.11.0"
 geo = "0.32.0"
 geo-types = "0.7.18"
+good_lp = { version = "1.14.2", features = ["highs"], default-features = false }
